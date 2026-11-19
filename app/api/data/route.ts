@@ -40,12 +40,12 @@ export async function GET(){
    }));
    return NextResponse.json({branch,citizens,schedules:enriched,reports});
   }
-  const schedules=await query<any>('SELECT id,title,schedule_date,status,history_table_name FROM aid_schedules WHERE branch_id=? ORDER BY schedule_date DESC,id DESC',[u.branch_id]);
+  const schedules=await query<any>('SELECT id,title,schedule_date,start_time,end_time,status,history_table_name FROM aid_schedules WHERE branch_id=? ORDER BY schedule_date DESC,id DESC',[u.branch_id]);
   const history:any[]=[];
   for(const s of schedules){
    const table=historyTable(Number(s.id));
    const rows=await query<any>('SELECT schedule_id,citizen_name,allocated_amount,received_amount,claim_status,claimed_at FROM '+table+' WHERE user_id=?',[u.id]);
-   for(const row of rows)history.push({...row,title:s.title,schedule_date:s.schedule_date});
+   for(const row of rows)history.push({...row,title:s.title,schedule_date:s.schedule_date,status:s.status,start_time:s.start_time,end_time:s.end_time});
   }
   return NextResponse.json({branch,reports:await query('SELECT * FROM issue_reports WHERE user_id=? ORDER BY created_at DESC',[u.id]),history});
  }catch(e:any){return NextResponse.json({error:e.message||'Gagal memuat data'},{status:500})}
@@ -97,7 +97,7 @@ export async function POST(req:Request){
    const u=await requireRole(['branch_admin']);const id=Number(x.schedule_id),table=historyTable(id),c=await pool.getConnection();
    try{await c.beginTransaction();const [schedules]:any=await c.execute("SELECT id FROM aid_schedules WHERE id=? AND branch_id=? AND status='active' AND schedule_date=CURDATE() FOR UPDATE",[id,u.branch_id]);if(!schedules.length)throw new Error('Jadwal tidak aktif, bukan milik cabang ini, atau bukan tanggal hari ini');const quoted=table;const [rows]:any=await c.execute('SELECT * FROM '+quoted+' WHERE qr_token=? FOR UPDATE',[String(x.qr_token||'')]);const v=rows[0];if(!v)throw new Error('QR tidak terdaftar pada jadwal');if(v.claim_status==='claimed')throw new Error('Bantuan sudah diklaim pada '+String(v.claimed_at)+' dengan nominal '+String(v.received_amount));const amount=Number(x.received_amount);if(!Number.isFinite(amount)||amount<=0||amount>Number(v.allocated_amount))throw new Error('Nominal diterima harus lebih dari nol dan tidak melebihi alokasi');await c.execute("UPDATE "+quoted+" SET claim_status='claimed',received_amount=?,claimed_at=NOW(),scanned_by=? WHERE id=?",[amount,u.id,v.id]);await c.execute('UPDATE branches SET disbursed_total=disbursed_total+? WHERE id=?',[amount,u.branch_id]);await c.commit()}catch(e){await c.rollback();throw e}finally{c.release()}
   }else if(x.action==='report'){
-   const u=await requireRole(['citizen']);const subject=String(x.subject||'').trim(),description=String(x.description||'').trim();if(!subject||!description)throw new Error('Subjek dan deskripsi wajib diisi');await query('INSERT INTO issue_reports(user_id,branch_id,subject,description) VALUES(?,?,?,?)',[u.id,u.branch_id,subject,description]);
+   const u=await requireRole(['citizen']);const subject=String(x.subject||'').trim(),description=String(x.description||'').trim(),scheduleId=x.schedule_id?Number(x.schedule_id):null;if(!subject||!description)throw new Error('Subjek dan deskripsi wajib diisi');if(scheduleId){const own=await query<any>('SELECT id FROM aid_schedules WHERE id=? AND branch_id=?',[scheduleId,u.branch_id]);if(!own.length)throw new Error('Jadwal laporan tidak valid');}await query('INSERT INTO issue_reports(user_id,branch_id,schedule_id,subject,description) VALUES(?,?,?,?,?)',[u.id,u.branch_id,scheduleId,subject,description]);
   }else if(x.action==='report_update'){
    const u=await requireRole(['super_admin','branch_admin']);const id=Number(x.id),status=String(x.status||''),response=String(x.admin_response||'').trim();if(!['open','in_progress','resolved'].includes(status))throw new Error('Status laporan tidak valid');if(!response)throw new Error('Tanggapan petugas wajib diisi');
    const args:any[]=[status,response,id];let sql='UPDATE issue_reports SET status=?,admin_response=? WHERE id=?';if(u.role==='branch_admin'){sql+=' AND branch_id=?';args.push(u.branch_id)}const [result]:any=await pool.execute(sql,args);if(!result.affectedRows)throw new Error('Laporan tidak ditemukan atau di luar kewenangan');
