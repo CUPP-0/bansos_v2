@@ -15,7 +15,15 @@ export async function GET(){
     query('SELECT b.*,COUNT(DISTINCT s.id) schedule_count FROM branches b LEFT JOIN aid_schedules s ON s.branch_id=b.id GROUP BY b.id ORDER BY b.name'),
     query('SELECT r.*,u.name citizen_name,b.name branch_name FROM issue_reports r JOIN users u ON u.id=r.user_id JOIN branches b ON b.id=r.branch_id ORDER BY r.created_at DESC')
    ]);
-   return NextResponse.json({branches,reports});
+   const monthlyMap=new Map<string,{month:string,disbursed:number,allocated:number}>();
+   const [allSchedules,budgetMonths]:any=await Promise.all([
+    query("SELECT id,DATE_FORMAT(schedule_date,'%Y-%m') month_key FROM aid_schedules ORDER BY schedule_date"),
+    query("SELECT DATE_FORMAT(allocated_date,'%Y-%m') month_key,COALESCE(SUM(amount),0) amount FROM branch_budget_logs GROUP BY DATE_FORMAT(allocated_date,'%Y-%m')")
+   ]);
+   for(const row of budgetMonths){const item=monthlyMap.get(row.month_key)||{month:row.month_key,disbursed:0,allocated:0};item.allocated=Number(row.amount);monthlyMap.set(row.month_key,item)}
+   for(const schedule of allSchedules){const table=historyTable(Number(schedule.id));const [sum]:any=await query('SELECT COALESCE(SUM(received_amount),0) amount FROM '+table);const item=monthlyMap.get(schedule.month_key)||{month:schedule.month_key,disbursed:0,allocated:0};item.disbursed+=Number(sum[0]?.amount||0);monthlyMap.set(schedule.month_key,item)}
+   const monthly=[...monthlyMap.values()].sort((a,b)=>a.month.localeCompare(b.month));
+   return NextResponse.json({branches,reports,monthly});
   }
   const branch=(await query<any>('SELECT * FROM branches WHERE id=?',[u.branch_id]))[0];
   if(u.role==='branch_admin'){
@@ -83,6 +91,8 @@ export async function POST(req:Request){
    const u=await requireRole(['branch_admin']);const [result]:any=await pool.execute("UPDATE aid_schedules SET status='active' WHERE id=? AND branch_id=? AND status='draft'",[Number(x.id),u.branch_id]);if(!result.affectedRows)throw new Error('Jadwal tidak ditemukan atau bukan berstatus draft');
   }else if(x.action==='complete'){
    const u=await requireRole(['branch_admin']);const id=Number(x.id),table=historyTable(id);const valid=await query<any>('SELECT id FROM aid_schedules WHERE id=? AND branch_id=? AND status=\'active\'',[id,u.branch_id]);if(!valid.length)throw new Error('Jadwal aktif tidak ditemukan');const pending=await query<any>('SELECT COUNT(*) total FROM '+table+' WHERE claim_status=\'pending\'');if(Number(pending[0].total)>0)throw new Error('Masih ada warga yang belum menerima bantuan');await query("UPDATE aid_schedules SET status='completed' WHERE id=? AND branch_id=?",[id,u.branch_id]);
+  }else if(x.action==='lookup_claim'){
+   const u=await requireRole(['branch_admin']);const id=Number(x.schedule_id),table=historyTable(id);const valid=await query<any>("SELECT id,title,schedule_date FROM aid_schedules WHERE id=? AND branch_id=? AND status='active' AND schedule_date=CURDATE()",[id,u.branch_id]);if(!valid.length)throw new Error('Pilih jadwal aktif yang berlaku hari ini');const rows=await query<any>('SELECT user_id,citizen_name,nik,allocated_amount,received_amount,claim_status,claimed_at FROM '+table+' WHERE qr_token=?',[String(x.qr_token||'')]);if(!rows.length)throw new Error('QR tidak terdaftar pada jadwal ini');return NextResponse.json({ok:true,citizen:rows[0],schedule:valid[0]});
   }else if(x.action==='claim'){
    const u=await requireRole(['branch_admin']);const id=Number(x.schedule_id),table=historyTable(id),c=await pool.getConnection();
    try{await c.beginTransaction();const [schedules]:any=await c.execute("SELECT id FROM aid_schedules WHERE id=? AND branch_id=? AND status='active' AND schedule_date=CURDATE() FOR UPDATE",[id,u.branch_id]);if(!schedules.length)throw new Error('Jadwal tidak aktif, bukan milik cabang ini, atau bukan tanggal hari ini');const quoted=table;const [rows]:any=await c.execute('SELECT * FROM '+quoted+' WHERE qr_token=? FOR UPDATE',[String(x.qr_token||'')]);const v=rows[0];if(!v)throw new Error('QR tidak terdaftar pada jadwal');if(v.claim_status==='claimed')throw new Error('Bantuan sudah diklaim pada '+String(v.claimed_at)+' dengan nominal '+String(v.received_amount));const amount=Number(x.received_amount);if(!Number.isFinite(amount)||amount<=0||amount>Number(v.allocated_amount))throw new Error('Nominal diterima harus lebih dari nol dan tidak melebihi alokasi');await c.execute("UPDATE "+quoted+" SET claim_status='claimed',received_amount=?,claimed_at=NOW(),scanned_by=? WHERE id=?",[amount,u.id,v.id]);await c.execute('UPDATE branches SET disbursed_total=disbursed_total+? WHERE id=?',[amount,u.branch_id]);await c.commit()}catch(e){await c.rollback();throw e}finally{c.release()}
