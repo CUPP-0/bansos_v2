@@ -1,0 +1,1 @@
+import {redirect} from 'next/navigation';import {getSession} from '@/lib/auth';export default async function Home(){const u=await getSession();if(!u)redirect('/login');redirect(u.role==='super_admin'?'/admin':u.role==='branch_admin'?'/cabang':'/warga')}
