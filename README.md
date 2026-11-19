@@ -49,7 +49,9 @@ Seed menyediakan dua cabang dan akun demo. Password seluruh akun demo adalah `pa
 |---|---|---|
 | Admin utama | `admin` | `password` |
 | Petugas Jakarta | `petugas.jakarta` | `password` |
-| Warga | `siti.aminah` | `password` |
+| Petugas Bandung | `petugas.bandung` | `password` |
+| Warga Jakarta | `siti.aminah` / `warga.jakarta` | `password` |
+| Warga Bandung | `warga.bandung` | `password` |
 
 ### 3. Environment
 Salin `.env.example` menjadi `.env.local`, lalu sesuaikan kredensial MySQL. Ganti `SESSION_SECRET` dengan string acak rahasia minimal 32 karakter. Jangan gunakan nilai contoh di server publik.
