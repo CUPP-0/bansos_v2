@@ -43,7 +43,10 @@ export async function POST(req:Request){
     const id=Number(insert.insertId),table='schedule_history_'+id;if(!/^schedule_history_\\d+$/.test(table))throw new Error('Nama tabel histori tidak valid');const quoted=String.fromCharCode(96)+table+String.fromCharCode(96);
     await c.execute('CREATE TABLE '+quoted+" (id INT AUTO_INCREMENT PRIMARY KEY,schedule_id INT NOT NULL,user_id INT NOT NULL,citizen_name VARCHAR(120) NOT NULL,nik VARCHAR(30) NULL,qr_token VARCHAR(100) NOT NULL,allocated_amount DECIMAL(15,2) NOT NULL DEFAULT 0,received_amount DECIMAL(15,2) NOT NULL DEFAULT 0,claim_status ENUM('pending','claimed') NOT NULL DEFAULT 'pending',claimed_at DATETIME NULL,scanned_by INT NULL,UNIQUE KEY uq_user(user_id),INDEX idx_qr(qr_token),INDEX idx_status(claim_status)) ENGINE=InnoDB");
     const [citizens]:any=await c.execute("SELECT id,name,nik,qr_token FROM users WHERE branch_id=? AND role='citizen'",[u.branch_id]);
-    for(const citizen of citizens)await c.execute('INSERT INTO '+quoted+'(schedule_id,user_id,citizen_name,nik,qr_token,allocated_amount) VALUES(?,?,?,?,?,0)',[id,citizen.id,citizen.name,citizen.nik,citizen.qr_token]);
+    const amount=Number(x.amount);if(!Number.isFinite(amount)||amount<=0)throw new Error('Nominal alokasi per warga harus lebih dari nol');
+    const [budgetRows]:any=await c.execute('SELECT allocated_budget,disbursed_total FROM branches WHERE id=? FOR UPDATE',[u.branch_id]);
+    if(amount*citizens.length>Number(budgetRows[0].allocated_budget)-Number(budgetRows[0].disbursed_total))throw new Error('Anggaran cabang tidak mencukupi');
+    for(const citizen of citizens)await c.execute('INSERT INTO '+quoted+'(schedule_id,user_id,citizen_name,nik,qr_token,allocated_amount) VALUES(?,?,?,?,?,?)',[id,citizen.id,citizen.name,citizen.nik,citizen.qr_token,amount]);
     await c.execute('UPDATE aid_schedules SET history_table_name=? WHERE id=?',[table,id]);await c.commit();
    }catch(e){await c.rollback();throw e}finally{c.release()}
   }else if(x.action==='activate'){
