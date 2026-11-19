@@ -1,7 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {QRCodeSVG} from 'qrcode.react';
-import {Html5Qrcode} from 'html5-qrcode';
 import {BarChart,Bar,XAxis,YAxis,Tooltip,Legend,CartesianGrid,ResponsiveContainer} from 'recharts';
 
 const rp=(n:any)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n||0));
@@ -25,11 +24,13 @@ export default function Dashboard({portal,user}:any){
   const r=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'lookup_claim',schedule_id:scanSchedule,qr_token:token})});
   const x=await r.json();if(!r.ok){SE(x.error||'QR tidak valid');return}SD(x);
  }
- async function startScanner(){
-  if(!scanSchedule){SE('Pilih jadwal aktif terlebih dahulu');return}
-  try{const scanner=new Html5Qrcode('qr-reader');SO(true);await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:240}},decoded=>{ST(decoded);SO(false);scanner.stop().then(()=>scanner.clear()).catch(()=>{});lookupToken(decoded)},()=>{});}
-  catch(e:any){SO(false);SE(e?.message||'Kamera tidak dapat dibuka. Gunakan input token manual.')}
- }
+ useEffect(()=>{
+  if(!scanOn)return;
+  let scanner:any,stopped=false;
+  (async()=>{try{const {Html5Qrcode}=await import('html5-qrcode');if(stopped)return;scanner=new Html5Qrcode('qr-reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:240}},(decoded:string)=>{ST(decoded);SO(false);lookupToken(decoded)},()=>{});}catch(e:any){if(!stopped){SO(false);SE(e?.message||'Kamera tidak dapat dibuka. Gunakan input token manual.')}}})();
+  return ()=>{stopped=true;if(scanner){scanner.stop().then(()=>scanner.clear()).catch(()=>{})}};
+ },[scanOn,scanSchedule]);
+ function startScanner(){if(!scanSchedule){SE('Pilih jadwal aktif terlebih dahulu');return}SE('');SO(true)}
  async function action(actionName:string,values:any){
   const r=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:actionName,...values})});
   const x=await r.json();M(r.ok?'Berhasil diperbarui':x.error||'Operasi gagal');if(r.ok)load();
