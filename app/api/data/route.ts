@@ -17,12 +17,12 @@ export async function GET(){
    ]);
    const monthlyMap=new Map<string,{branch_id:number,branch_name:string,month:string,disbursed:number,allocated:number}>();
    const [allSchedules,budgetMonths]:any=await Promise.all([
-    query("SELECT id,branch_id,DATE_FORMAT(schedule_date,'%Y-%m') month_key FROM aid_schedules ORDER BY schedule_date"),
+    query("SELECT id,branch_id FROM aid_schedules ORDER BY id"),
     query("SELECT branch_id,DATE_FORMAT(allocated_date,'%Y-%m') month_key,COALESCE(SUM(amount),0) amount FROM branch_budget_logs GROUP BY branch_id,DATE_FORMAT(allocated_date,'%Y-%m')")
    ]);
    const branchName=(id:number)=>String((branches as any[]).find((b:any)=>Number(b.id)===Number(id))?.name||'Cabang');
    for(const row of budgetMonths){const key=String(row.branch_id)+'-'+row.month_key;const item=monthlyMap.get(key)||{branch_id:Number(row.branch_id),branch_name:branchName(row.branch_id),month:row.month_key,disbursed:0,allocated:0};item.allocated=Number(row.amount);monthlyMap.set(key,item)}
-   for(const schedule of allSchedules){const table=historyTable(Number(schedule.id));const [sum]:any=await query('SELECT COALESCE(SUM(received_amount),0) amount FROM '+table);const key=String(schedule.branch_id)+'-'+schedule.month_key;const item=monthlyMap.get(key)||{branch_id:Number(schedule.branch_id),branch_name:branchName(schedule.branch_id),month:schedule.month_key,disbursed:0,allocated:0};item.disbursed+=Number(sum[0]?.amount||0);monthlyMap.set(key,item)}
+   for(const schedule of allSchedules){const table=historyTable(Number(schedule.id));const sums=await query<any>("SELECT DATE_FORMAT(claimed_at,'%Y-%m') month_key,COALESCE(SUM(received_amount),0) amount FROM "+table+" WHERE claim_status='claimed' GROUP BY DATE_FORMAT(claimed_at,'%Y-%m')");for(const sum of sums){const key=String(schedule.branch_id)+'-'+sum.month_key;const item=monthlyMap.get(key)||{branch_id:Number(schedule.branch_id),branch_name:branchName(schedule.branch_id),month:sum.month_key,disbursed:0,allocated:0};item.disbursed+=Number(sum.amount||0);monthlyMap.set(key,item)}}
    const monthly=[...monthlyMap.values()].sort((a,b)=>a.month.localeCompare(b.month)||a.branch_name.localeCompare(b.branch_name));
    return NextResponse.json({branches,reports,monthly});
   }
