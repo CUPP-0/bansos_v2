@@ -42,13 +42,15 @@ export async function GET(){
    return NextResponse.json({branch,citizens,schedules:enriched,reports});
   }
   const schedules=await query<any>('SELECT id,title,schedule_date,start_time,end_time,status,history_table_name FROM aid_schedules WHERE branch_id=? ORDER BY schedule_date DESC,id DESC',[u.branch_id]);
-  const history:any[]=[];
+  const history:any[]=[],branchSpending:any[]=[];
   for(const s of schedules){
    const table=historyTable(Number(s.id));
+   const [totals]:any=await query('SELECT COUNT(*) recipients,SUM(claim_status=\'claimed\') claimed,COALESCE(SUM(allocated_amount),0) allocated,COALESCE(SUM(received_amount),0) received FROM '+table);
+   branchSpending.push({title:s.title,schedule_date:s.schedule_date,status:s.status,recipients:totals?.recipients||0,claimed:totals?.claimed||0,allocated:totals?.allocated||0,received:totals?.received||0});
    const rows=await query<any>('SELECT schedule_id,citizen_name,allocated_amount,received_amount,claim_status,claimed_at FROM '+table+' WHERE user_id=?',[u.id]);
    for(const row of rows)history.push({...row,title:s.title,schedule_date:s.schedule_date,status:s.status,start_time:s.start_time,end_time:s.end_time});
   }
-  return NextResponse.json({branch,reports:await query('SELECT * FROM issue_reports WHERE user_id=? ORDER BY created_at DESC',[u.id]),history});
+  return NextResponse.json({branch,reports:await query('SELECT * FROM issue_reports WHERE user_id=? ORDER BY created_at DESC',[u.id]),history,branchSpending});
  }catch(e:any){return NextResponse.json({error:e.message||'Gagal memuat data'},{status:500})}
 }
 
