@@ -58,23 +58,24 @@ export async function POST(req:Request){
    const u=await requireRole(['branch_admin']);const name=String(x.name||'').trim(),username=String(x.username||'').trim(),password=String(x.password||'');if(!name||!username||password.length<8)throw new Error('Nama, username, dan password minimal 8 karakter wajib diisi');
    const hash=await bcrypt.hash(password,10);await query("INSERT INTO users(name,username,nik,password_hash,role,branch_id,qr_token) VALUES(?,?,?,?,'citizen',?,?)",[name,username,x.nik||null,hash,u.branch_id,'W-'+randomBytes(20).toString('hex')]);
   }else if(x.action==='schedule'){
-   const u=await requireRole(['branch_admin']);const title=String(x.title||'').trim(),date=String(x.schedule_date||'');const amount=money(x.amount);if(!title||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date))throw new Error('Judul dan tanggal jadwal wajib diisi');
+   const u=await requireRole(['branch_admin']);const title=String(x.title||'').trim(),date=String(x.schedule_date||''),startTime=String(x.start_time||'')||null,endTime=String(x.end_time||'')||null;if(!title||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date))throw new Error('Judul dan tanggal jadwal wajib diisi');if(startTime&&!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime)||endTime&&!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(endTime))throw new Error('Format jam tidak valid');if(startTime&&endTime&&startTime>=endTime)throw new Error('Jam selesai harus setelah jam mulai');
    const c=await pool.getConnection();let id=0,table='';
    try{
     await c.beginTransaction();
     const [citizens]:any=await c.execute("SELECT id,name,nik,qr_token FROM users WHERE branch_id=? AND role='citizen' ORDER BY id",[u.branch_id]);
     if(!citizens.length)throw new Error('Tambahkan warga sebelum membuat jadwal');
+    const allocations=new Map<number,number>();let totalAllocation=0;for(const citizen of citizens){const raw=x.allocations?.[String(citizen.id)]??x.amount;const value=money(raw);allocations.set(Number(citizen.id),value);totalAllocation+=value;}
     const [budgetRows]:any=await c.execute('SELECT allocated_budget,disbursed_total FROM branches WHERE id=? FOR UPDATE',[u.branch_id]);
     if(!budgetRows.length)throw new Error('Cabang tidak ditemukan');
     let reserved=0;
     const [existing]:any=await c.execute("SELECT id FROM aid_schedules WHERE branch_id=? AND status IN ('draft','active')",[u.branch_id]);
     for(const item of existing){const oldTable=historyTable(Number(item.id));const [sum]:any=await c.execute('SELECT COALESCE(SUM(allocated_amount),0) reserved FROM '+oldTable+' WHERE claim_status=\'pending\'');reserved+=Number(sum[0]?.reserved||0)}
     const available=Number(budgetRows[0].allocated_budget)-Number(budgetRows[0].disbursed_total)-reserved;
-    if(amount*citizens.length>available)throw new Error('Anggaran tidak mencukupi setelah memperhitungkan jadwal lain yang masih berjalan');
+    if(totalAllocation>available)throw new Error('Total alokasi warga melebihi anggaran yang tersedia setelah memperhitungkan jadwal lain');
     const [insert]:any=await c.execute("INSERT INTO aid_schedules(branch_id,title,schedule_date,history_table_name,status) VALUES(?,?,?,'pending','draft')",[u.branch_id,title,date]);id=Number(insert.insertId);table='schedule_history_'+id;
     const quoted=historyTable(id);
     await c.execute('CREATE TABLE '+quoted+" (id INT AUTO_INCREMENT PRIMARY KEY,schedule_id INT NOT NULL,user_id INT NOT NULL,citizen_name VARCHAR(120) NOT NULL,nik VARCHAR(30) NULL,qr_token VARCHAR(100) NOT NULL,allocated_amount DECIMAL(15,2) NOT NULL DEFAULT 0,received_amount DECIMAL(15,2) NOT NULL DEFAULT 0,claim_status ENUM('pending','claimed') NOT NULL DEFAULT 'pending',claimed_at DATETIME NULL,scanned_by INT NULL,UNIQUE KEY uq_user(user_id),INDEX idx_qr(qr_token),INDEX idx_status(claim_status)) ENGINE=InnoDB");
-    for(const citizen of citizens)await c.execute('INSERT INTO '+quoted+'(schedule_id,user_id,citizen_name,nik,qr_token,allocated_amount) VALUES(?,?,?,?,?,?)',[id,citizen.id,citizen.name,citizen.nik,citizen.qr_token,amount]);
+    for(const citizen of citizens)await c.execute('INSERT INTO '+quoted+'(schedule_id,user_id,citizen_name,nik,qr_token,allocated_amount) VALUES(?,?,?,?,?,?)',[id,citizen.id,citizen.name,citizen.nik,citizen.qr_token,allocations.get(Number(citizen.id))]);
     await c.execute('UPDATE aid_schedules SET history_table_name=? WHERE id=?',[table,id]);await c.commit();
    }catch(e){await c.rollback();if(id){try{await c.execute('DROP TABLE IF EXISTS '+historyTable(id));await c.execute('DELETE FROM aid_schedules WHERE id=?',[id]);}catch{}}throw e}finally{c.release()}
   }else if(x.action==='activate'){
