@@ -68,7 +68,7 @@ export async function POST(req:Request){
     if(!budgetRows.length)throw new Error('Cabang tidak ditemukan');
     let reserved=0;
     const [existing]:any=await c.execute("SELECT id FROM aid_schedules WHERE branch_id=? AND status IN ('draft','active')",[u.branch_id]);
-    for(const item of existing){const oldTable=historyTable(Number(item.id));const [sum]:any=await c.execute('SELECT COALESCE(SUM(allocated_amount),0) reserved FROM '+oldTable+' WHERE claim_status=\\'pending\\'');reserved+=Number(sum[0]?.reserved||0)}
+    for(const item of existing){const oldTable=historyTable(Number(item.id));const [sum]:any=await c.execute('SELECT COALESCE(SUM(allocated_amount),0) reserved FROM '+oldTable+' WHERE claim_status=\'pending\'');reserved+=Number(sum[0]?.reserved||0)}
     const available=Number(budgetRows[0].allocated_budget)-Number(budgetRows[0].disbursed_total)-reserved;
     if(amount*citizens.length>available)throw new Error('Anggaran tidak mencukupi setelah memperhitungkan jadwal lain yang masih berjalan');
     const [insert]:any=await c.execute("INSERT INTO aid_schedules(branch_id,title,schedule_date,history_table_name,status) VALUES(?,?,?,'pending','draft')",[u.branch_id,title,date]);id=Number(insert.insertId);table='schedule_history_'+id;
