@@ -13,6 +13,8 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+      - name: Dependency security audit
+        run: npm audit --json || true
       - run: npm run build
         env:
           SESSION_SECRET: ci-only-secret-that-is-longer-than-thirty-two-characters
