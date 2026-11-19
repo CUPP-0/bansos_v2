@@ -15,14 +15,15 @@ export async function GET(){
     query('SELECT b.*,COUNT(DISTINCT s.id) schedule_count FROM branches b LEFT JOIN aid_schedules s ON s.branch_id=b.id GROUP BY b.id ORDER BY b.name'),
     query('SELECT r.*,u.name citizen_name,b.name branch_name FROM issue_reports r JOIN users u ON u.id=r.user_id JOIN branches b ON b.id=r.branch_id ORDER BY r.created_at DESC')
    ]);
-   const monthlyMap=new Map<string,{month:string,disbursed:number,allocated:number}>();
+   const monthlyMap=new Map<string,{branch_id:number,branch_name:string,month:string,disbursed:number,allocated:number}>();
    const [allSchedules,budgetMonths]:any=await Promise.all([
-    query("SELECT id,DATE_FORMAT(schedule_date,'%Y-%m') month_key FROM aid_schedules ORDER BY schedule_date"),
-    query("SELECT DATE_FORMAT(allocated_date,'%Y-%m') month_key,COALESCE(SUM(amount),0) amount FROM branch_budget_logs GROUP BY DATE_FORMAT(allocated_date,'%Y-%m')")
+    query("SELECT id,branch_id,DATE_FORMAT(schedule_date,'%Y-%m') month_key FROM aid_schedules ORDER BY schedule_date"),
+    query("SELECT branch_id,DATE_FORMAT(allocated_date,'%Y-%m') month_key,COALESCE(SUM(amount),0) amount FROM branch_budget_logs GROUP BY branch_id,DATE_FORMAT(allocated_date,'%Y-%m')")
    ]);
-   for(const row of budgetMonths){const item=monthlyMap.get(row.month_key)||{month:row.month_key,disbursed:0,allocated:0};item.allocated=Number(row.amount);monthlyMap.set(row.month_key,item)}
-   for(const schedule of allSchedules){const table=historyTable(Number(schedule.id));const [sum]:any=await query('SELECT COALESCE(SUM(received_amount),0) amount FROM '+table);const item=monthlyMap.get(schedule.month_key)||{month:schedule.month_key,disbursed:0,allocated:0};item.disbursed+=Number(sum[0]?.amount||0);monthlyMap.set(schedule.month_key,item)}
-   const monthly=[...monthlyMap.values()].sort((a,b)=>a.month.localeCompare(b.month));
+   const branchName=(id:number)=>String((branches as any[]).find((b:any)=>Number(b.id)===Number(id))?.name||'Cabang');
+   for(const row of budgetMonths){const key=String(row.branch_id)+'-'+row.month_key;const item=monthlyMap.get(key)||{branch_id:Number(row.branch_id),branch_name:branchName(row.branch_id),month:row.month_key,disbursed:0,allocated:0};item.allocated=Number(row.amount);monthlyMap.set(key,item)}
+   for(const schedule of allSchedules){const table=historyTable(Number(schedule.id));const [sum]:any=await query('SELECT COALESCE(SUM(received_amount),0) amount FROM '+table);const key=String(schedule.branch_id)+'-'+schedule.month_key;const item=monthlyMap.get(key)||{branch_id:Number(schedule.branch_id),branch_name:branchName(schedule.branch_id),month:schedule.month_key,disbursed:0,allocated:0};item.disbursed+=Number(sum[0]?.amount||0);monthlyMap.set(key,item)}
+   const monthly=[...monthlyMap.values()].sort((a,b)=>a.month.localeCompare(b.month)||a.branch_name.localeCompare(b.branch_name));
    return NextResponse.json({branches,reports,monthly});
   }
   const branch=(await query<any>('SELECT * FROM branches WHERE id=?',[u.branch_id]))[0];
