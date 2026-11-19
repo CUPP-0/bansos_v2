@@ -1,5 +1,2 @@
-import { PortalPage } from '@/components/portal-page';
-
-export default function Page() {
-  return <PortalPage portal="cabang" section="jadwal" />;
-}
+import {requireRole} from '@/lib/auth'; import {PortalProvider} from '@/components/portal-context'; import PortalLayout from '@/components/PortalLayout'; import CabangJadwalPage from '@/components/cabang/JadwalPage';
+export default async function Page(){const roles={admin:'super_admin',cabang:'branch_admin',warga:'citizen'} as const;const user=await requireRole([roles.cabang]);return <PortalProvider user={user} portal="cabang"><PortalLayout portal="cabang" section="jadwal"><CabangJadwalPage/></PortalLayout></PortalProvider>}

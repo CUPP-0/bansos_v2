@@ -1,0 +1,3 @@
+'use client'; import {usePortal} from '@/components/portal-context';
+import ReportList from '@/components/ReportList';
+export default function CabangLaporanPage(){const {data,user,portal:activePortal,submit,action,rp,date,chartRows,chartBranch,setChartBranch,scanSchedule,setScanSchedule,scanToken,setScanToken,scanDetails,scanError,scanOn,lookupToken,startScanner}=usePortal();return <><div data-page="laporan" className="panel mt-5"><h2 className="font-bold mb-4">Laporan warga cabang</h2><ReportList reports={data.reports}/></div></>}

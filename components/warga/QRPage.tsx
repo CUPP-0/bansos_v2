@@ -1,0 +1,3 @@
+'use client'; import {usePortal} from '@/components/portal-context';
+import {QRCodeSVG} from 'qrcode.react';
+export default function WargaQRPage(){const {data,user,portal:activePortal,submit,action,rp,date,chartRows,chartBranch,setChartBranch,scanSchedule,setScanSchedule,scanToken,setScanToken,scanDetails,scanError,scanOn,lookupToken,startScanner}=usePortal();return <><div data-page="qr" className="panel mt-6"><h2 className="font-bold">QR identitas penerima</h2><div className="mt-4"><QRCodeSVG value={user.qr_token||'QR belum tersedia'} size={180}/></div><p className="mt-3 text-sm text-slate-500">Tunjukkan QR ini kepada petugas saat pengambilan bantuan.</p></div></>}

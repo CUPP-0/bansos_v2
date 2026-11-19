@@ -1,5 +1,2 @@
-import { PortalPage } from '@/components/portal-page';
-
-export default function Page() {
-  return <PortalPage portal="warga" section="qr" />;
-}
+import {requireRole} from '@/lib/auth'; import {PortalProvider} from '@/components/portal-context'; import PortalLayout from '@/components/PortalLayout'; import WargaQRPage from '@/components/warga/QRPage';
+export default async function Page(){const roles={admin:'super_admin',cabang:'branch_admin',warga:'citizen'} as const;const user=await requireRole([roles.warga]);return <PortalProvider user={user} portal="warga"><PortalLayout portal="warga" section="qr"><WargaQRPage/></PortalLayout></PortalProvider>}
