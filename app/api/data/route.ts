@@ -65,13 +65,18 @@ export async function POST(req:Request){
     const [citizens]:any=await c.execute("SELECT id,name,nik,qr_token FROM users WHERE branch_id=? AND role='citizen' ORDER BY id",[u.branch_id]);
     if(!citizens.length)throw new Error('Tambahkan warga sebelum membuat jadwal');
     const [budgetRows]:any=await c.execute('SELECT allocated_budget,disbursed_total FROM branches WHERE id=? FOR UPDATE',[u.branch_id]);
-    if(!budgetRows.length||amount*citizens.length>Number(budgetRows[0].allocated_budget)-Number(budgetRows[0].disbursed_total))throw new Error('Anggaran cabang tidak mencukupi');
+    if(!budgetRows.length)throw new Error('Cabang tidak ditemukan');
+    let reserved=0;
+    const [existing]:any=await c.execute("SELECT id FROM aid_schedules WHERE branch_id=? AND status IN ('draft','active')",[u.branch_id]);
+    for(const item of existing){const oldTable=historyTable(Number(item.id));const [sum]:any=await c.execute('SELECT COALESCE(SUM(allocated_amount),0) reserved FROM '+oldTable+' WHERE claim_status=\\'pending\\'');reserved+=Number(sum[0]?.reserved||0)}
+    const available=Number(budgetRows[0].allocated_budget)-Number(budgetRows[0].disbursed_total)-reserved;
+    if(amount*citizens.length>available)throw new Error('Anggaran tidak mencukupi setelah memperhitungkan jadwal lain yang masih berjalan');
     const [insert]:any=await c.execute("INSERT INTO aid_schedules(branch_id,title,schedule_date,history_table_name,status) VALUES(?,?,?,'pending','draft')",[u.branch_id,title,date]);id=Number(insert.insertId);table='schedule_history_'+id;
     const quoted=historyTable(id);
     await c.execute('CREATE TABLE '+quoted+" (id INT AUTO_INCREMENT PRIMARY KEY,schedule_id INT NOT NULL,user_id INT NOT NULL,citizen_name VARCHAR(120) NOT NULL,nik VARCHAR(30) NULL,qr_token VARCHAR(100) NOT NULL,allocated_amount DECIMAL(15,2) NOT NULL DEFAULT 0,received_amount DECIMAL(15,2) NOT NULL DEFAULT 0,claim_status ENUM('pending','claimed') NOT NULL DEFAULT 'pending',claimed_at DATETIME NULL,scanned_by INT NULL,UNIQUE KEY uq_user(user_id),INDEX idx_qr(qr_token),INDEX idx_status(claim_status)) ENGINE=InnoDB");
     for(const citizen of citizens)await c.execute('INSERT INTO '+quoted+'(schedule_id,user_id,citizen_name,nik,qr_token,allocated_amount) VALUES(?,?,?,?,?,?)',[id,citizen.id,citizen.name,citizen.nik,citizen.qr_token,amount]);
     await c.execute('UPDATE aid_schedules SET history_table_name=? WHERE id=?',[table,id]);await c.commit();
-   }catch(e){await c.rollback();if(id){try{await c.execute('DELETE FROM aid_schedules WHERE id=?',[id]);}catch{}}throw e}finally{c.release()}
+   }catch(e){await c.rollback();if(id){try{await c.execute('DROP TABLE IF EXISTS '+historyTable(id));await c.execute('DELETE FROM aid_schedules WHERE id=?',[id]);}catch{}}throw e}finally{c.release()}
   }else if(x.action==='activate'){
    const u=await requireRole(['branch_admin']);const [result]:any=await pool.execute("UPDATE aid_schedules SET status='active' WHERE id=? AND branch_id=? AND status='draft'",[Number(x.id),u.branch_id]);if(!result.affectedRows)throw new Error('Jadwal tidak ditemukan atau bukan berstatus draft');
   }else if(x.action==='complete'){
