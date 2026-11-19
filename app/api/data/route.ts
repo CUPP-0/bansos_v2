@@ -35,7 +35,6 @@ export async function GET(){
     query<any>('SELECT * FROM aid_schedules WHERE branch_id=? ORDER BY schedule_date DESC,id DESC',[u.branch_id]),
     query('SELECT r.*,u.name citizen_name FROM issue_reports r JOIN users u ON u.id=r.user_id WHERE r.branch_id=? ORDER BY r.created_at DESC',[u.branch_id])
    ]);
-   const monthlyRows=await query<any>("SELECT DATE_FORMAT(h.claimed_at,'%Y-%m') month_key,COALESCE(SUM(h.received_amount),0) disbursed,COUNT(*) claims FROM aid_schedules s JOIN information_schema.tables t ON t.table_schema=DATABASE() AND t.table_name=CONCAT('schedule_history_',s.id) JOIN (SELECT 1) seed ON 1=1 JOIN schedule_history_1 h ON 1=0 WHERE s.branch_id=? GROUP BY DATE_FORMAT(h.claimed_at,'%Y-%m')",[u.branch_id]).catch(()=>[]);
    const monthlyMap=new Map<string,{month:string,disbursed:number,claims:number}>();
    const monthlySchedules=await query<any>("SELECT id FROM aid_schedules WHERE branch_id=? ORDER BY id",[u.branch_id]);
    for(const item of monthlySchedules){const sums=await query<any>("SELECT DATE_FORMAT(claimed_at,'%Y-%m') month,COALESCE(SUM(received_amount),0) disbursed,COUNT(*) claims FROM `schedule_history_${Number(item.id)}` WHERE claim_status='claimed' GROUP BY DATE_FORMAT(claimed_at,'%Y-%m')");for(const row of sums){const current=monthlyMap.get(row.month)||{month:row.month,disbursed:0,claims:0};current.disbursed+=Number(row.disbursed||0);current.claims+=Number(row.claims||0);monthlyMap.set(row.month,current)}}
