@@ -2,3 +2,7 @@ USE bansos_transparan;
 INSERT INTO branches(id,code,name,region,allocated_budget) VALUES(1,'JKT-001','Cabang Jakarta Selatan','DKI Jakarta',50000000),(2,'BDG-001','Cabang Bandung','Jawa Barat',35000000);
 -- Password demo: password. Generate a bcrypt hash with bcryptjs if needed.
 INSERT INTO users(id,name,username,nik,password_hash,role,branch_id,qr_token) VALUES(1,'Administrator Utama','admin',NULL,'$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy','super_admin',NULL,NULL),(2,'Petugas Jakarta','petugas.jakarta',NULL,'$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy','branch_admin',1,NULL),(3,'Siti Aminah','siti.aminah','3171010101010001','$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy','citizen',1,'WARGA-DEMO-SITI-001');
+INSERT INTO users(id,name,username,nik,password_hash,role,branch_id,qr_token) VALUES
+(4,'Petugas Bandung','petugas.bandung',NULL,'$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy','branch_admin',2,NULL),
+(5,'Warga Demo Bandung','warga.bandung',NULL,'$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy','citizen',2,'WARGA-DEMO-BDG-001'),
+(6,'Warga Demo Jakarta','warga.jakarta',NULL,'$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy','citizen',1,'WARGA-DEMO-JKT-002');
