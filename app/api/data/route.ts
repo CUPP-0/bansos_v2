@@ -28,18 +28,26 @@ export async function GET(){
   }
   const branch=(await query<any>('SELECT * FROM branches WHERE id=?',[u.branch_id]))[0];
   if(u.role==='branch_admin'){
+   // Tutup otomatis jadwal yang tanggalnya sudah lewat atau jam selesai hari ini sudah terlewati.
+   await query("UPDATE aid_schedules SET status='completed' WHERE branch_id=? AND status='active' AND (schedule_date<CURDATE() OR (schedule_date=CURDATE() AND end_time IS NOT NULL AND end_time<CURTIME()))",[u.branch_id]);
    const [citizens,schedules,reports]=await Promise.all([
     query('SELECT id,name,nik,qr_token FROM users WHERE branch_id=? AND role=? ORDER BY name',[u.branch_id,'citizen']),
     query<any>('SELECT * FROM aid_schedules WHERE branch_id=? ORDER BY schedule_date DESC,id DESC',[u.branch_id]),
     query('SELECT r.*,u.name citizen_name FROM issue_reports r JOIN users u ON u.id=r.user_id WHERE r.branch_id=? ORDER BY r.created_at DESC',[u.branch_id])
    ]);
+   const monthlyRows=await query<any>("SELECT DATE_FORMAT(h.claimed_at,'%Y-%m') month_key,COALESCE(SUM(h.received_amount),0) disbursed,COUNT(*) claims FROM aid_schedules s JOIN information_schema.tables t ON t.table_schema=DATABASE() AND t.table_name=CONCAT('schedule_history_',s.id) JOIN (SELECT 1) seed ON 1=1 JOIN schedule_history_1 h ON 1=0 WHERE s.branch_id=? GROUP BY DATE_FORMAT(h.claimed_at,'%Y-%m')",[u.branch_id]).catch(()=>[]);
+   const monthlyMap=new Map<string,{month:string,disbursed:number,claims:number}>();
+   const monthlySchedules=await query<any>("SELECT id FROM aid_schedules WHERE branch_id=? ORDER BY id",[u.branch_id]);
+   for(const item of monthlySchedules){const sums=await query<any>("SELECT DATE_FORMAT(claimed_at,'%Y-%m') month,COALESCE(SUM(received_amount),0) disbursed,COUNT(*) claims FROM `schedule_history_${Number(item.id)}` WHERE claim_status='claimed' GROUP BY DATE_FORMAT(claimed_at,'%Y-%m')");for(const row of sums){const current=monthlyMap.get(row.month)||{month:row.month,disbursed:0,claims:0};current.disbursed+=Number(row.disbursed||0);current.claims+=Number(row.claims||0);monthlyMap.set(row.month,current)}}
+   const monthly=[...monthlyMap.values()].sort((a,b)=>a.month.localeCompare(b.month));
    const enriched=await Promise.all(schedules.map(async(s:any)=>{
     const table=historyTable(Number(s.id));
     const [stats]:any=await query('SELECT COUNT(*) total, SUM(claim_status=\'claimed\') claimed, SUM(claim_status=\'pending\') pending, COALESCE(SUM(allocated_amount),0) allocated, COALESCE(SUM(received_amount),0) received FROM '+table);
     const history=await query('SELECT id,citizen_name,nik,allocated_amount,received_amount,claim_status,claimed_at FROM '+table+' ORDER BY citizen_name');
     return {...s,stats:stats||{},history};
    }));
-   return NextResponse.json({branch,citizens,schedules:enriched,reports});
+   const archived=await Promise.all(enriched.filter((s:any)=>s.status==='completed').map(async(s:any)=>({...s,history:s.history||[]})));
+   return NextResponse.json({branch,citizens,schedules:enriched,monthly,archived,reports});
   }
   const schedules=await query<any>('SELECT id,title,schedule_date,start_time,end_time,status,history_table_name FROM aid_schedules WHERE branch_id=? ORDER BY schedule_date DESC,id DESC',[u.branch_id]);
   const history:any[]=[],branchSpending:any[]=[];
@@ -92,8 +100,8 @@ export async function POST(req:Request){
    }catch(e){await c.rollback();if(id){try{await c.execute('DROP TABLE IF EXISTS '+historyTable(id));await c.execute('DELETE FROM aid_schedules WHERE id=?',[id]);}catch{}}throw e}finally{c.release()}
   }else if(x.action==='activate'){
    const u=await requireRole(['branch_admin']);const [result]:any=await pool.execute("UPDATE aid_schedules SET status='active' WHERE id=? AND branch_id=? AND status='draft'",[Number(x.id),u.branch_id]);if(!result.affectedRows)throw new Error('Jadwal tidak ditemukan atau bukan berstatus draft');
-  }else if(x.action==='complete'){
-   const u=await requireRole(['branch_admin']);const id=Number(x.id),table=historyTable(id);const valid=await query<any>('SELECT id FROM aid_schedules WHERE id=? AND branch_id=? AND status=\'active\'',[id,u.branch_id]);if(!valid.length)throw new Error('Jadwal aktif tidak ditemukan');const pending=await query<any>('SELECT COUNT(*) total FROM '+table+' WHERE claim_status=\'pending\'');if(Number(pending[0].total)>0)throw new Error('Masih ada warga yang belum menerima bantuan');await query("UPDATE aid_schedules SET status='completed' WHERE id=? AND branch_id=?",[id,u.branch_id]);
+  }else if(x.action==='complete'||x.action==='close_schedule'){
+   const u=await requireRole(['branch_admin']);const id=Number(x.id);const valid=await query<any>("SELECT id FROM aid_schedules WHERE id=? AND branch_id=? AND status='active'",[id,u.branch_id]);if(!valid.length)throw new Error('Jadwal aktif tidak ditemukan');if(x.action==='complete'){const table=historyTable(id);const pending=await query<any>("SELECT COUNT(*) total FROM "+table+" WHERE claim_status='pending'");if(Number(pending[0].total)>0)throw new Error('Masih ada warga yang belum menerima bantuan. Gunakan Tutup jadwal jika penyaluran dihentikan.')}await query("UPDATE aid_schedules SET status='completed' WHERE id=? AND branch_id=?",[id,u.branch_id]);
   }else if(x.action==='lookup_claim'){
    const u=await requireRole(['branch_admin']);const id=Number(x.schedule_id),table=historyTable(id);const valid=await query<any>("SELECT id,title,schedule_date FROM aid_schedules WHERE id=? AND branch_id=? AND status='active' AND schedule_date=CURDATE()",[id,u.branch_id]);if(!valid.length)throw new Error('Pilih jadwal aktif yang berlaku hari ini');const rows=await query<any>('SELECT user_id,citizen_name,nik,allocated_amount,received_amount,claim_status,claimed_at FROM '+table+' WHERE qr_token=?',[String(x.qr_token||'')]);if(!rows.length)throw new Error('QR tidak terdaftar pada jadwal ini');return NextResponse.json({ok:true,citizen:rows[0],schedule:valid[0]});
   }else if(x.action==='claim'){
