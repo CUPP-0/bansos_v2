@@ -37,7 +37,7 @@ export async function GET(){
    ]);
    const monthlyMap=new Map<string,{month:string,disbursed:number,claims:number}>();
    const monthlySchedules=await query<any>("SELECT id FROM aid_schedules WHERE branch_id=? ORDER BY id",[u.branch_id]);
-   for(const item of monthlySchedules){const sums=await query<any>("SELECT DATE_FORMAT(claimed_at,'%Y-%m') month,COALESCE(SUM(received_amount),0) disbursed,COUNT(*) claims FROM `schedule_history_${Number(item.id)}` WHERE claim_status='claimed' GROUP BY DATE_FORMAT(claimed_at,'%Y-%m')");for(const row of sums){const current=monthlyMap.get(row.month)||{month:row.month,disbursed:0,claims:0};current.disbursed+=Number(row.disbursed||0);current.claims+=Number(row.claims||0);monthlyMap.set(row.month,current)}}
+   for(const item of monthlySchedules){const sums=await query<any>(`SELECT DATE_FORMAT(claimed_at,'%Y-%m') month,COALESCE(SUM(received_amount),0) disbursed,COUNT(*) claims FROM ${historyTable(Number(item.id))} WHERE claim_status='claimed' GROUP BY DATE_FORMAT(claimed_at,'%Y-%m')`);for(const row of sums){const current=monthlyMap.get(row.month)||{month:row.month,disbursed:0,claims:0};current.disbursed+=Number(row.disbursed||0);current.claims+=Number(row.claims||0);monthlyMap.set(row.month,current)}}
    const monthly=[...monthlyMap.values()].sort((a,b)=>a.month.localeCompare(b.month));
    const enriched=await Promise.all(schedules.map(async(s:any)=>{
     const table=historyTable(Number(s.id));
