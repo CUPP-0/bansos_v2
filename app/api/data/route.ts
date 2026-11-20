@@ -43,10 +43,11 @@ export async function GET(){
     const table=historyTable(Number(s.id));
     const [stats]:any=await query('SELECT COUNT(*) total, SUM(claim_status=\'claimed\') claimed, SUM(claim_status=\'pending\') pending, COALESCE(SUM(allocated_amount),0) allocated, COALESCE(SUM(received_amount),0) received FROM '+table);
     const history=await query('SELECT id,citizen_name,nik,allocated_amount,received_amount,claim_status,claimed_at FROM '+table+' ORDER BY citizen_name');
-    return {...s,stats:stats||{},history};
+    const [today]:any=await query("SELECT COUNT(*) total FROM "+table+" WHERE claim_status='claimed' AND DATE(claimed_at)=CURDATE()");
+    return {...s,stats:{...(stats||{}),today_scans:Number(today?.total||0)},history};
    }));
    const archived=await Promise.all(enriched.filter((s:any)=>s.status==='completed').map(async(s:any)=>({...s,history:s.history||[]})));
-   return NextResponse.json({branch,citizens,schedules:enriched,monthly,archived,reports});
+   return NextResponse.json({branch,citizens,schedules:enriched,monthly,archived,reports,today_scans:enriched.reduce((sum:number,item:any)=>sum+Number(item.stats?.today_scans||0),0),today_claimed:enriched.reduce((sum:number,item:any)=>sum+Number(item.stats?.today_scans||0),0)});
   }
   const citizen=(await query<any>("SELECT id,name,username,nik,qr_token,branch_id FROM users WHERE id=? AND role='citizen' LIMIT 1",[u.id]))[0]||null;
   const schedules=await query<any>("SELECT id,title,schedule_date,start_time,end_time,status,history_table_name FROM aid_schedules WHERE branch_id=? ORDER BY schedule_date DESC,id DESC",[u.branch_id]);
