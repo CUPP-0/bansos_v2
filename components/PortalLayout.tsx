@@ -61,7 +61,6 @@ export default function PortalLayout({
           ['jadwal', 'Jadwal', 'calendar'],
           ['scan', 'Scan QR', 'scan'],
           ['history', 'History', 'clock'],
-          ['laporan', 'Laporan', 'doc'],
         ]
       : [
           ['home', 'Beranda', 'home'],

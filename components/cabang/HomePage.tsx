@@ -210,7 +210,7 @@ export default function CabangHomePage() {
       </div>
 
       {/* ===== BOTTOM GRID ===== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         {/* Recent Activities */}
         <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
           <div className="flex justify-between items-center mb-4">
@@ -233,40 +233,6 @@ export default function CabangHomePage() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-          <h3 className="font-bold text-black mb-4">Quick Actions</h3>
-          <div className="space-y-3">
-            {[
-              { label: 'Scan Token', icon: 'scan' },
-              { label: 'Tambah Warga', icon: 'users' },
-              { label: 'Laporan', icon: 'doc' },
-              { label: 'Pengaturan', icon: 'settings2' },
-            ].map((q) => (
-              <button
-                key={q.label}
-                className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition text-left"
-              >
-                <div className="w-9 h-9 rounded-lg bg-black text-white flex items-center justify-center">
-                  <Icon name={q.icon} className="w-4 h-4" />
-                </div>
-                <span className="text-sm font-medium text-gray-700">{q.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Progress card */}
-          <div className="mt-5 p-4 rounded-xl bg-black text-white">
-            <p className="text-xs opacity-70">Realisasi Anggaran Cabang</p>
-            <div className="flex items-end justify-between mt-1">
-              <b className="text-xl">{realization}%</b>
-              <span className="text-xs opacity-70">Dari total anggaran cabang</span>
-            </div>
-            <div className="w-full h-2 bg-white/20 rounded-full mt-3 overflow-hidden">
-              <div className="h-full bg-white rounded-full" style={{ width: `${Math.min(100, realization)}%` }}></div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Footer */}
