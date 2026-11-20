@@ -257,10 +257,10 @@ export default function CabangHomePage() {
 
           {/* Progress card */}
           <div className="mt-5 p-4 rounded-xl bg-black text-white">
-            <p className="text-xs opacity-70">Target Bulanan</p>
+            <p className="text-xs opacity-70">Realisasi Anggaran Cabang</p>
             <div className="flex items-end justify-between mt-1">
               <b className="text-xl">{realization}%</b>
-              <span className="text-xs opacity-70">Realisasi anggaran</span>
+              <span className="text-xs opacity-70">Dari total anggaran cabang</span>
             </div>
             <div className="w-full h-2 bg-white/20 rounded-full mt-3 overflow-hidden">
               <div className="h-full bg-white rounded-full" style={{ width: `${Math.min(100, realization)}%` }}></div>
