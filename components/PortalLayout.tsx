@@ -101,7 +101,7 @@ export default function PortalLayout({
     >
       {/* ===== SIDEBAR ===== */}
       <aside
-        className="hidden lg:flex w-60 flex-col justify-between p-5 shrink-0 border-r"
+        className="hidden lg:flex fixed inset-y-0 left-0 z-40 w-60 flex-col justify-between p-5 shrink-0 border-r"
         style={{
           backgroundColor: '#ffffff',
           borderColor: '#e5e7eb',
@@ -213,33 +213,43 @@ export default function PortalLayout({
         </div>
       </aside>
 
-      {/* ===== MAIN CONTENT ===== */}
-      <section 
-  className="p-6 md:p-10 w-full max-w-[1400px]" 
-  style={{ 
-    marginLeft: '240px'
-  }}
->
-        {/* Mobile nav */}
-        <nav className="lg:hidden flex gap-2 overflow-x-auto pb-3 mb-4 border-b" style={{ borderColor: '#e5e7eb' }}>
-          {menus.map(([k, l]) => {
+
+      {/* ===== MOBILE BOTTOM NAVIGATION ===== */}
+      <nav
+        aria-label="Navigasi utama"
+        className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t bg-white/95 backdrop-blur-md"
+        style={{ borderColor: '#e5e7eb', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="mx-auto flex w-full max-w-xl items-stretch justify-around px-1 pt-2 pb-2">
+          {menus.map(([k, label, iconName]) => {
             const isActive = section === k;
             return (
               <Link
                 key={k}
                 href={`/${portal}/${k}`}
-                className="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition"
-                style={{
-                  backgroundColor: isActive ? '#000000' : '#f3f4f6',
-                  color: isActive ? '#ffffff' : '#4b5563',
-                }}
+                aria-current={isActive ? 'page' : undefined}
+                className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 transition-colors"
+                style={{ color: isActive ? '#000000' : '#9ca3af' }}
               >
-                {l}
+                <span
+                  className="flex h-8 w-10 items-center justify-center rounded-xl transition-colors"
+                  style={{ backgroundColor: isActive ? '#f3f4f6' : 'transparent' }}
+                >
+                  <Icon name={iconName} className="h-5 w-5" />
+                </span>
+                <span className="max-w-full truncate text-[10px] font-medium leading-tight sm:text-xs">
+                  {label}
+                </span>
               </Link>
             );
           })}
-        </nav>
+        </div>
+      </nav>
 
+      {/* ===== MAIN CONTENT ===== */}
+      <section 
+  className="w-full max-w-[1400px] p-4 pb-28 sm:p-6 sm:pb-28 md:p-10 md:pb-28 lg:ml-60 lg:pb-10"
+>
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div>
