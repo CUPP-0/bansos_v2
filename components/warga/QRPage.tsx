@@ -36,9 +36,9 @@ export default function WargaQRPage() {
   const [copied, setCopied] = useState(false);
 
   // Fallback ke user jika citizen belum ter-load
-  const citizen = data.citizen || user;
-  const token = citizen?.qr_token || 'QR_BELUM_TERSEDIA';
-  const hasToken = token !== 'QR_BELUM_TERSEDIA';
+  const citizen = data.citizen;
+  const token = citizen?.qr_token || '';
+  const hasToken = Boolean(token);
 
   const handleCopy = async () => {
     if (!hasToken) return;
@@ -61,7 +61,7 @@ export default function WargaQRPage() {
           <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center mx-auto mb-3">
             <Icon name="user" className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-xl font-bold text-black">{citizen?.name || 'Nama Warga'}</h2>
+          <h2 className="text-xl font-bold text-black">{citizen?.name || 'Data warga belum tersedia'}</h2>
           {citizen?.nik && (
             <p className="text-sm text-gray-500 mt-1 flex items-center justify-center gap-1.5">
               <Icon name="id" className="w-3.5 h-3.5" />
