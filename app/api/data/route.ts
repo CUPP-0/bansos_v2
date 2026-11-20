@@ -48,8 +48,8 @@ export async function GET(){
    const archived=await Promise.all(enriched.filter((s:any)=>s.status==='completed').map(async(s:any)=>({...s,history:s.history||[]})));
    return NextResponse.json({branch,citizens,schedules:enriched,monthly,archived,reports});
   }
-  const citizen=(await query<any>(\"SELECT id,name,username,nik,qr_token,branch_id FROM users WHERE id=? AND role='citizen' LIMIT 1\",[u.id]))[0]||null;
-  const schedules=await query<any>(\"SELECT id,title,schedule_date,start_time,end_time,status,history_table_name FROM aid_schedules WHERE branch_id=? ORDER BY schedule_date DESC,id DESC\",[u.branch_id]);
+  const citizen=(await query<any>("SELECT id,name,username,nik,qr_token,branch_id FROM users WHERE id=? AND role='citizen' LIMIT 1",[u.id]))[0]||null;
+  const schedules=await query<any>("SELECT id,title,schedule_date,start_time,end_time,status,history_table_name FROM aid_schedules WHERE branch_id=? ORDER BY schedule_date DESC,id DESC",[u.branch_id]);
   const history:any[]=[],branchSpending:any[]=[],citizenSchedules:any[]=[];
   for(const s of schedules){
    const table=historyTable(Number(s.id));
