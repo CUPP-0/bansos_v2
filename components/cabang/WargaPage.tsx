@@ -49,15 +49,6 @@ export default function CabangWargaPage() {
 
   return (
     <div data-page="warga" className="space-y-6">
-      {/* ===== HEADER SECTION ===== */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-black">Data Warga</h1>
-          <p className="text-gray-500 mt-1">
-            Kelola akun warga dan QR token untuk penyaluran bantuan.
-          </p>
-        </div>
-      </div>
 
       {/* ===== STAT CARDS ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

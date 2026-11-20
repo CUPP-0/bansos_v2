@@ -50,15 +50,6 @@ export default function AdminLaporanPage() {
 
   return (
     <div data-page="laporan" className="space-y-6">
-      {/* ===== HEADER ===== */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-black">Laporan Kendala Warga</h1>
-          <p className="text-gray-500 mt-1">
-            Pantau dan tindak lanjuti laporan masalah yang disampaikan oleh warga.
-          </p>
-        </div>
-      </div>
 
       {/* ===== STAT CARDS ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

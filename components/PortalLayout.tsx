@@ -68,7 +68,6 @@ export default function PortalLayout({
       : [
           ['home', 'Beranda', 'home'],
           ['qr', 'QR Saya', 'key'],
-          ['transparansi', 'Transparansi', 'eye'],
           ['riwayat', 'Riwayat', 'clock'],
           ['laporan', 'Laporan', 'doc'],
         ];

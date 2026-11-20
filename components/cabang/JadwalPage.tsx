@@ -82,15 +82,6 @@ export default function CabangJadwalPage() {
 
   return (
     <div data-page="jadwal" className="space-y-6">
-      {/* ===== HEADER ===== */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-black">Jadwal Penyaluran</h1>
-          <p className="text-gray-500 mt-1">
-            Buat dan kelola jadwal penyaluran bantuan untuk warga.
-          </p>
-        </div>
-      </div>
 
       {/* ===== STAT CARDS ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

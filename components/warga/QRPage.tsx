@@ -53,13 +53,6 @@ export default function WargaQRPage() {
 
   return (
     <div data-page="qr" className="space-y-6">
-      {/* ===== HEADER ===== */}
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-black">QR Identitas Penerima</h1>
-        <p className="text-gray-500 mt-1">
-          Tunjukkan kode ini kepada petugas saat pengambilan bantuan.
-        </p>
-      </div>
 
       {/* ===== MAIN QR CARD ===== */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-10 max-w-md mx-auto text-center">

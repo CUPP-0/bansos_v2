@@ -75,17 +75,6 @@ export default function AdminHomePage() {
 
   return (
     <div data-page="home" className="space-y-6">
-      {/* ===== HEADER ===== */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-black">
-            Ringkasan Nasional
-          </h1>
-          <p className="text-gray-500 mt-1">
-            Pantau anggaran dan penyaluran bantuan di seluruh cabang.
-          </p>
-        </div>
-      </div>
 
       {/* ===== STAT CARDS ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

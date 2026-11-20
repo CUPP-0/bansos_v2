@@ -60,20 +60,6 @@ export default function CabangLaporanPage() {
 
   return (
     <div data-page="laporan" className="space-y-6">
-      {/* ===== HEADER ===== */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-black">Laporan Warga Cabang</h1>
-          <p className="text-gray-500 mt-1">
-            Pantau dan kelola laporan yang masuk dari warga cabang ini.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2 border border-gray-200">
-          <Icon name="folder" className="w-4 h-4 text-gray-600" />
-          <span className="text-sm font-semibold text-black">{totalLaporan}</span>
-          <span className="text-xs text-gray-500">laporan</span>
-        </div>
-      </div>
 
       {/* ===== STAT CARDS ===== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
