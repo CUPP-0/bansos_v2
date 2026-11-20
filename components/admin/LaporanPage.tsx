@@ -36,7 +36,7 @@ export default function AdminLaporanPage() {
   // ===== STATISTIK DARI DATA REAL =====
   const totalLaporan = reports.length;
   const menunggu = reports.filter(
-    (r: any) => r.status === 'pending' || r.status === 'menunggu' || !r.status
+    (r: any) => r.status === 'open' || r.status === 'pending' || r.status === 'menunggu' || !r.status
   ).length;
   const selesai = reports.filter(
     (r: any) => r.status === 'resolved' || r.status === 'selesai' || r.status === 'completed'
