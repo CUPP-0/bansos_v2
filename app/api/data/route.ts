@@ -12,7 +12,7 @@ export async function GET(){
   const u=await getSession();if(!u)return NextResponse.json({error:'Unauthorized'},{status:401});
   if(u.role==='super_admin'){
    const [branches,reports]=await Promise.all([
-    query('SELECT b.*,COUNT(DISTINCT s.id) schedule_count FROM branches b LEFT JOIN aid_schedules s ON s.branch_id=b.id GROUP BY b.id ORDER BY b.name'),
+    query("SELECT b.*,COUNT(DISTINCT s.id) schedule_count,COUNT(DISTINCT CASE WHEN u.role='citizen' THEN u.id END) total_residents FROM branches b LEFT JOIN aid_schedules s ON s.branch_id=b.id LEFT JOIN users u ON u.branch_id=b.id GROUP BY b.id ORDER BY b.name"),
     query('SELECT r.*,u.name citizen_name,b.name branch_name FROM issue_reports r JOIN users u ON u.id=r.user_id JOIN branches b ON b.id=r.branch_id ORDER BY r.created_at DESC')
    ]);
    const monthlyMap=new Map<string,{branch_id:number,branch_name:string,month:string,disbursed:number,allocated:number}>();
