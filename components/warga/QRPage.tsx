@@ -32,10 +32,9 @@ function Icon({ name, className = 'w-5 h-5' }: { name: string; className?: strin
 
 // ===== MAIN COMPONENT =====
 export default function WargaQRPage() {
-  const { data, user } = usePortal();
+  const { data } = usePortal();
   const [copied, setCopied] = useState(false);
 
-  // Fallback ke user jika citizen belum ter-load
   const citizen = data.citizen;
   const token = citizen?.qr_token || '';
   const hasToken = Boolean(token);
@@ -84,10 +83,7 @@ export default function WargaQRPage() {
           )}
           
           {/* Status Badge */}
-          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-black text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
-            <Icon name="shield" className="w-3 h-3" />
-            Terverifikasi
-          </div>
+          {hasToken && <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-black text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5"><Icon name="shield" className="w-3 h-3" />Token terdaftar</div>}
         </div>
 
         {/* Token String + Copy Button */}
