@@ -1,26 +1,143 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-:root{--navy:#102b4e;--blue:#174f8a;--yellow:#f5c542;--ink:#111827;--muted:#64748b;--line:#e5e7eb}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:#f4f6f9;color:var(--ink);font-family:Arial,Helvetica,sans-serif}
-button,input,select,textarea{font:inherit}
-.panel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 8px 28px rgba(16,43,78,.055);animation:rise .35s ease both}
-.field{width:100%;border:1px solid #d7dee8;border-radius:11px;padding:12px 14px;background:#fff;outline:none;transition:border-color .2s,box-shadow .2s}
-.field:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(23,79,138,.12)}
-.btn{background:var(--blue);color:#fff;padding:11px 17px;border-radius:11px;font-weight:700;transition:transform .2s,background .2s}
-.btn:hover{background:#103b69;transform:translateY(-1px)}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.muted{color:var(--muted)}
-aside{background:linear-gradient(160deg,#102b4e,#174f8a)!important;min-height:100vh}
-aside h2{color:var(--yellow);letter-spacing:.04em}
-aside button{border-radius:11px!important}
-.portal-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:7px;background:#e9eef5;border:1px solid #dce4ef;border-radius:14px}
-.portal-nav a{padding:10px 15px;border-radius:10px;color:#334155;font-size:13px;font-weight:700;text-decoration:none;transition:.2s}
-.portal-nav a:hover{background:#fff}
-.portal-nav a.active{background:var(--navy);color:#fff;box-shadow:0 3px 10px #102b4e24}
-main[data-active-section] [data-page]{display:none}
+
+:root {
+  --navy: #102b4e;
+  --blue: #174f8a;
+  --yellow: #f5c542;
+  --ink: #111827;
+  --muted: #64748b;
+  --line: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 8px 28px rgba(16, 43, 78, .055);
+  animation: rise .35s ease both;
+}
+
+.field {
+  width: 100%;
+  border: 1px solid #d7dee8;
+  border-radius: 11px;
+  padding: 12px 14px;
+  background: #fff;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.field:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(23, 79, 138, .12);
+}
+
+.btn {
+  background: var(--blue);
+  color: #fff;
+  padding: 11px 17px;
+  border-radius: 11px;
+  font-weight: 700;
+  transition: transform .2s, background .2s;
+}
+
+.btn:hover {
+  background: #103b69;
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* ===== SIDEBAR: HAPUS PAKSAAN WARNA BIRU ===== */
+/* ===== SIDEBAR: FIXED ===== */
+/* ===== SIDEBAR: FIXED ===== */
+aside {
+  background: #ffffff !important;
+  min-height: 100vh;
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 240px !important;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 40;
+}
+
+aside h2 {
+  color: var(--ink);
+  letter-spacing: .04em;
+}
+
+aside button {
+  border-radius: 11px !important;
+}
+
+/* ===== PORTAL NAV: HAPUS STYLING BIRU ===== */
+.portal-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 28px;
+  padding: 7px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+}
+
+.portal-nav a {
+  padding: 10px 15px;
+  border-radius: 10px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: .2s;
+}
+
+.portal-nav a:hover {
+  background: #fff;
+}
+
+.portal-nav a.active {
+  background: #000000;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .15);
+}
+
+/* ===== SECTION SWITCHING ===== */
+main[data-active-section] [data-page] {
+  display: none;
+}
+
 main[data-active-section="home"] [data-page~="home"],
 main[data-active-section="grafik"] [data-page~="grafik"],
 main[data-active-section="cabang"] [data-page~="cabang"],
@@ -32,6 +149,81 @@ main[data-active-section="history"] [data-page~="history"],
 main[data-active-section="qr"] [data-page~="qr"],
 main[data-active-section="transparansi"] [data-page~="transparansi"],
 main[data-active-section="riwayat"] [data-page~="riwayat"],
-main[data-active-section="laporan"] [data-page~="laporan"]{display:block}
-@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:1023px){main{display:block!important}main>aside{min-height:0!important;padding:18px 20px!important}main>aside p.mt-10{margin-top:12px}main>aside button{margin-top:10px!important}main[data-active-portal="warga"] .portal-nav{position:fixed;z-index:50;left:12px;right:12px;bottom:12px;margin:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:6px;background:rgba(16,43,78,.97);border:0;border-radius:17px;box-shadow:0 12px 35px #102b4e45;backdrop-filter:blur(14px)}main[data-active-portal="warga"] .portal-nav a{color:#dbeafe;text-align:center;font-size:10px;padding:11px 3px;white-space:nowrap}main[data-active-portal="warga"] .portal-nav a.active{background:var(--yellow);color:#172033}main[data-active-portal="warga"] .portal-nav a:hover{background:#ffffff18}main>section{padding:22px 16px 105px!important}.panel{padding:17px;border-radius:15px}}
+main[data-active-section="laporan"] [data-page~="laporan"] {
+  display: block;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 1023px) {
+  main {
+    display: block !important;
+  }
+
+  main > aside {
+    min-height: 0 !important;
+    padding: 18px 20px !important;
+  }
+
+  main > aside p.mt-10 {
+    margin-top: 12px;
+  }
+
+  main > aside button {
+    margin-top: 10px !important;
+  }
+
+  main[data-active-portal="warga"] .portal-nav {
+    position: fixed;
+    z-index: 50;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    padding: 6px;
+    background: rgba(0, 0, 0, .95);
+    border: 0;
+    border-radius: 17px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, .3);
+    backdrop-filter: blur(14px);
+  }
+
+  main[data-active-portal="warga"] .portal-nav a {
+    color: #d1d5db;
+    text-align: center;
+    font-size: 10px;
+    padding: 11px 3px;
+    white-space: nowrap;
+  }
+
+  main[data-active-portal="warga"] .portal-nav a.active {
+    background: var(--yellow);
+    color: #172033;
+  }
+
+  main[data-active-portal="warga"] .portal-nav a:hover {
+    background: rgba(255, 255, 255, .1);
+  }
+
+  main > section {
+    padding: 22px 16px 105px !important;
+  }
+
+  .panel {
+    padding: 17px;
+    border-radius: 15px;
+  }
+}

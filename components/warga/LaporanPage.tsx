@@ -1,3 +1,208 @@
-'use client'; import {usePortal} from '@/components/portal-context';
+'use client';
+
+import { usePortal } from '@/components/portal-context';
 import ReportList from '@/components/ReportList';
-export default function WargaLaporanPage(){const {data,user,portal:activePortal,submit,action,rp,date,chartRows,chartBranch,setChartBranch,scanSchedule,setScanSchedule,scanToken,setScanToken,scanDetails,scanError,scanOn,lookupToken,startScanner}=usePortal();return <><div data-page="laporan" className="panel mt-5"><h2 className="font-bold">Lapor kendala</h2><form className="grid gap-2 mt-3" onSubmit={e=>submit(e,'report')}><input className="field" name="subject" placeholder="Subjek laporan" required/><select className="field" name="schedule_id" defaultValue=""><option value="">Tidak terkait jadwal tertentu</option>{data.history?.map((h:any)=><option value={h.schedule_id} key={h.schedule_id}>{h.title} · {date(h.schedule_date)}</option>)}</select><textarea className="field" name="description" placeholder="Jelaskan kendala yang dialami" rows={4} required/><button className="btn">Kirim laporan</button></form><div className="mt-4"><ReportList reports={data.reports}/></div></div></>}
+
+// ===== SVG ICONS MONOKROM =====
+function Icon({ name, className = 'w-5 h-5' }: { name: string; className?: string }) {
+  const icons: Record<string, React.ReactNode> = {
+    doc: <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />,
+    send: <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />,
+    alert: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />,
+    calendar: <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />,
+    message: <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />,
+    check: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
+    clock: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />,
+  };
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.8}
+      stroke="currentColor"
+      className={className}
+    >
+      {icons[name]}
+    </svg>
+  );
+}
+
+// ===== MAIN COMPONENT =====
+export default function WargaLaporanPage() {
+  const { data, user, submit, date } = usePortal();
+
+  const reports = data.reports ?? [];
+  const history = data.history ?? [];
+
+  // Statistik dari data real
+  const totalLaporan = reports.length;
+  const menunggu = reports.filter((r: any) => r.status === 'pending' || r.status === 'menunggu' || !r.status).length;
+  const selesai = reports.filter((r: any) => r.status === 'resolved' || r.status === 'selesai' || r.status === 'completed').length;
+
+  const stats = [
+    { label: 'Total Laporan', value: totalLaporan, icon: 'doc' },
+    { label: 'Menunggu Respon', value: menunggu, icon: 'clock' },
+    { label: 'Telah Diselesaikan', value: selesai, icon: 'check' },
+  ];
+
+  return (
+    <div data-page="laporan" className="space-y-6">
+      {/* ===== HEADER ===== */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-black">Lapor Kendala</h1>
+          <p className="text-gray-500 mt-1">
+            Sampaikan masalah atau kendala yang Anda alami terkait penyaluran bantuan.
+          </p>
+        </div>
+      </div>
+
+      {/* ===== STAT CARDS ===== */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
+              <Icon name={s.icon} className="w-5 h-5 text-black" />
+            </div>
+            <p className="text-2xl font-bold text-black">{s.value}</p>
+            <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ===== FORM LAPOR ===== */}
+      <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center">
+            <Icon name="send" className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-black">Buat Laporan Baru</h2>
+            <p className="text-xs text-gray-500">
+              Isi detail kendala agar dapat kami tindak lanjuti.
+            </p>
+          </div>
+        </div>
+
+        <form className="space-y-4" onSubmit={(e) => submit(e, 'report')}>
+          {/* Subjek */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+              Subjek Laporan <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <Icon name="alert" className="w-4 h-4" />
+              </div>
+              <input
+                className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-black outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition bg-white"
+                name="subject"
+                placeholder="Contoh: Nama saya tidak ada di daftar"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Pilih Jadwal (Opsional) */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+              Terkait Jadwal <span className="text-gray-400 font-normal">(opsional)</span>
+            </label>
+            <div className="relative">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <Icon name="calendar" className="w-4 h-4" />
+              </div>
+              <select
+                className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-black outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition bg-white appearance-none cursor-pointer"
+                name="schedule_id"
+                defaultValue=""
+              >
+                <option value="">Tidak terkait jadwal tertentu</option>
+                {history.map((h: any, i: number) => (
+                  <option value={h.schedule_id} key={h.schedule_id ?? `hist-${i}`}>
+                    {h.title ?? 'Penyaluran'} · {date(h.schedule_date)}
+                  </option>
+                ))}
+              </select>
+              {/* Custom arrow for select */}
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Deskripsi */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+              Detail Kendala <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute left-3.5 top-3.5 text-gray-400">
+                <Icon name="message" className="w-4 h-4" />
+              </div>
+              <textarea
+                className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-black outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition bg-white resize-none"
+                name="description"
+                placeholder="Jelaskan kendala yang dialami secara rinci..."
+                rows={4}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              className="w-full sm:w-auto bg-black text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-800 transition flex items-center justify-center gap-2"
+            >
+              <Icon name="send" className="w-4 h-4" />
+              Kirim Laporan
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* ===== DAFTAR LAPORAN ===== */}
+      <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center">
+            <Icon name="doc" className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-black">Riwayat Laporan Saya</h2>
+            <p className="text-xs text-gray-500">
+              {totalLaporan} laporan tercatat
+            </p>
+          </div>
+        </div>
+
+        {totalLaporan === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+            <Icon name="doc" className="w-12 h-12 mb-2 opacity-30" />
+            <p className="text-sm font-medium text-gray-500">Belum ada laporan</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Laporan yang Anda kirim akan muncul di sini.
+            </p>
+          </div>
+        ) : (
+          /* 
+            CATATAN: Pastikan komponen <ReportList /> di dalam folder components 
+            juga sudah di-update styling-nya (menghapus class .panel, .btn, dll) 
+            agar warnanya tidak bentrok dengan container putih ini.
+          */
+          <div className="space-y-3">
+            <ReportList reports={reports} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
