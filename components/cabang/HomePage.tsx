@@ -49,17 +49,24 @@ export default function CabangHomePage() {
     scanDetails, scanError, scanOn, lookupToken, startScanner
   } = usePortal();
 
+  const citizens = data.citizens ?? [];
+  const schedules = data.schedules ?? [];
+  const reports = data.reports ?? [];
+  const totalWarga = citizens.length;
+  const tokenAktif = citizens.filter((citizen: any) => Boolean(citizen.qr_token)).length;
+  const pendingCount = schedules.reduce((total: number, schedule: any) => total + Number(schedule.stats?.pending ?? 0), 0);
+  const allocated = Number(data.branch?.allocated_budget ?? 0);
+  const disbursed = Number(data.branch?.disbursed_total ?? 0);
+  const realization = allocated > 0 ? Math.round((disbursed / allocated) * 100) : 0;
   const recentActivities = [
-    { id: 1, title: 'Penyaluran dana Batch 12', desc: '150 warga menerima bantuan', time: '2 jam lalu', icon: 'money', bg: 'bg-gray-100', fg: 'text-gray-700' },
-    { id: 2, title: 'Verifikasi data warga', desc: '23 data baru diverifikasi', time: '5 jam lalu', icon: 'check', bg: 'bg-gray-100', fg: 'text-gray-700' },
-    { id: 3, title: 'Laporan bulanan dibuat', desc: 'Oktober 2026', time: '1 hari lalu', icon: 'chart', bg: 'bg-gray-100', fg: 'text-gray-700' },
-    { id: 4, title: 'Scan token baru', desc: 'Token #8842 ditambahkan', time: '2 hari lalu', icon: 'key', bg: 'bg-gray-100', fg: 'text-gray-700' },
-  ];
+    ...schedules.map((item: any) => ({ id: `schedule-${item.id}`, title: item.title, desc: `Jadwal penyaluran · ${item.stats?.claimed ?? 0} dari ${item.stats?.total ?? 0} warga menerima`, time: item.created_at, icon: 'calendar' })),
+    ...reports.map((item: any) => ({ id: `report-${item.id}`, title: item.subject, desc: `Laporan warga · ${item.status}`, time: item.created_at, icon: 'doc' })),
+  ].sort((a: any, b: any) => new Date(b.time || 0).getTime() - new Date(a.time || 0).getTime()).slice(0, 5);
 
   const branchStats = [
-    { label: 'Total Warga', value: data.branch?.total_residents ?? 1248, icon: 'users' },
-    { label: 'Token Aktif', value: data.branch?.active_tokens ?? 892, icon: 'key' },
-    { label: 'Pending', value: data.branch?.pending_count ?? 47, icon: 'hourglass' },
+    { label: 'Total Warga', value: totalWarga, icon: 'users' },
+    { label: 'Token Aktif', value: tokenAktif, icon: 'key' },
+    { label: 'Belum Disalurkan', value: pendingCount, icon: 'hourglass' },
   ];
 
   return (
@@ -77,21 +84,10 @@ export default function CabangHomePage() {
                 <div className="w-7 h-7 rounded-full bg-gray-400 border-2 border-[#fef3e2]"></div>
                 <div className="w-7 h-7 rounded-full bg-gray-600 border-2 border-[#fef3e2]"></div>
               </div>
-              <span className="text-xs bg-white/60 rounded-full px-2 py-0.5 font-medium">25+</span>
+              <span className="text-xs bg-white/60 rounded-full px-2 py-0.5 font-medium">{totalWarga} warga</span>
             </div>
           </div>
-          <div className="flex items-end gap-1.5 mt-4 h-12">
-            {[40, 65, 45, 80, 55, 70, 90, 60, 75, 50].map((h, i) => (
-              <div
-                key={i}
-                className={`flex-1 rounded-sm ${i % 3 === 0 ? 'bg-gray-400' : 'bg-black'}`}
-                style={{ height: `${h}%` }}
-              />
-            ))}
-          </div>
-          <div className="flex items-center gap-1 mt-3 text-xs font-medium text-gray-700">
-            <span className="w-2 h-2 rounded-full bg-black"></span> 45%
-          </div>
+          <p className="text-xs text-gray-600 mt-3">Total anggaran yang dialokasikan ke cabang</p>
         </div>
 
         {/* Expenses Card */}
@@ -99,31 +95,16 @@ export default function CabangHomePage() {
           <p className="text-sm text-gray-500 font-medium">Expenses</p>
           <div className="flex items-end justify-between mt-2">
             <b className="text-2xl text-black">{rp(data.branch?.disbursed_total)}</b>
-            <button className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black font-bold shadow-sm border border-gray-200">
-              <Icon name="plus" className="w-4 h-4" />
-            </button>
+            <span className="text-xs bg-white/70 rounded-full px-3 py-1">Realisasi {realization}%</span>
           </div>
-          <div className="flex items-end gap-1.5 mt-4 h-12">
-            {[70, 50, 60, 45, 80, 55, 90, 65, 75, 85].map((h, i) => (
-              <div
-                key={i}
-                className={`flex-1 rounded-sm ${i % 2 === 0 ? 'bg-gray-400' : 'bg-black'}`}
-                style={{ height: `${h}%` }}
-              />
-            ))}
-          </div>
-          <div className="flex items-center gap-1 mt-3 text-xs font-medium text-gray-700">
-            <span className="w-2 h-2 rounded-full bg-black"></span> 28%
-          </div>
+          <p className="text-xs text-gray-600 mt-3">Nominal bantuan yang sudah diterima warga</p>
         </div>
 
         {/* Important Card */}
         <div className="bg-[#e8f5e9] rounded-2xl p-5 relative overflow-hidden">
-          <p className="text-sm text-gray-500 font-medium">Important</p>
-          <b className="text-xl text-black mt-1 block">Tax Report</b>
-          <p className="text-sm text-gray-600 mt-3">
-            Prepare your yearly Tax Report till <b>Oct 20</b>
-          </p>
+          <p className="text-sm text-gray-500 font-medium">Sisa Anggaran</p>
+          <b className="text-xl text-black mt-1 block">{rp(Math.max(0, allocated - disbursed))}</b>
+          <p className="text-sm text-gray-600 mt-3">Anggaran tersedia setelah dikurangi penyaluran yang tercatat.</p>
           <svg className="absolute right-0 top-0 w-32 h-full opacity-30" viewBox="0 0 120 160">
             <path d="M120 0 Q80 40 90 80 T60 160" fill="none" stroke="#000000" strokeWidth="2" />
             <path d="M100 0 Q60 60 70 100 T40 160" fill="none" stroke="#000000" strokeWidth="1.5" />
@@ -237,21 +218,18 @@ export default function CabangHomePage() {
             <button className="text-xs text-gray-600 font-medium hover:text-black transition">View all</button>
           </div>
           <div className="space-y-3">
-            {recentActivities.map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition"
-              >
-                <div className={`w-10 h-10 rounded-xl ${a.bg} flex items-center justify-center shrink-0`}>
-                  <Icon name={a.icon} className={`w-5 h-5 ${a.fg}`} />
+            {recentActivities.length ? recentActivities.map((a: any) => (
+              <div key={a.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                  <Icon name={a.icon} className="w-5 h-5 text-gray-700" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-black">{a.title}</p>
                   <p className="text-xs text-gray-500 truncate">{a.desc}</p>
                 </div>
-                <span className="text-xs text-gray-400 whitespace-nowrap">{a.time}</span>
+                <span className="text-xs text-gray-400 whitespace-nowrap">{a.time ? new Date(a.time).toLocaleString('id-ID') : '-'}</span>
               </div>
-            ))}
+            )) : <p className="text-sm text-gray-500 py-8 text-center">Belum ada aktivitas yang tercatat.</p>}
           </div>
         </div>
 
@@ -281,11 +259,11 @@ export default function CabangHomePage() {
           <div className="mt-5 p-4 rounded-xl bg-black text-white">
             <p className="text-xs opacity-70">Target Bulanan</p>
             <div className="flex items-end justify-between mt-1">
-              <b className="text-xl">72%</b>
-              <span className="text-xs opacity-70">Sisa 28%</span>
+              <b className="text-xl">{realization}%</b>
+              <span className="text-xs opacity-70">Realisasi anggaran</span>
             </div>
             <div className="w-full h-2 bg-white/20 rounded-full mt-3 overflow-hidden">
-              <div className="h-full bg-white rounded-full" style={{ width: '72%' }}></div>
+              <div className="h-full bg-white rounded-full" style={{ width: `${Math.min(100, realization)}%` }}></div>
             </div>
           </div>
         </div>
